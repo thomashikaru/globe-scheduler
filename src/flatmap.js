@@ -51,6 +51,11 @@ export function initFlatmap() {
     const ids = state.pins.map((p) => p.id).join(',');
     if (ids !== lastPinIds) {
       lastPinIds = ids;
+      // Showing/hiding the Locations panel changes the reserved insets
+      // (--reserve-left on desktop, --reserve-top on mobile), so re-fit the
+      // map before positioning pins against the fresh mapW/mapH.
+      document.body.classList.toggle('has-pins', state.pins.length > 0);
+      sizeMap();
       rebuildPins(state.pins);
     }
     render();
@@ -240,16 +245,20 @@ function updatePin({ p, badge, clock }, date) {
 
 function sizeMap() {
   const dpr = window.devicePixelRatio || 1;
-  // Reserve space for the search (top) and time slider (bottom) overlays.
-  const availW = window.innerWidth - 48;
-  const availH = window.innerHeight - 96 - 150;
-  let w = availW;
-  let h = w / 2;
-  if (h > availH) {
-    h = availH;
-    w = h * 2;
-  }
-  mapW = Math.max(240, Math.floor(w));
+  // Fit inside the region the overlays don't cover. The reserved insets live in
+  // CSS (--reserve-*, read off <body> so the has-pins / cal-open overrides
+  // apply) and also drive #flatmap's padding, so JS and CSS stay in agreement:
+  // availW === innerWidth - paddingLeft - paddingRight.
+  const cs = getComputedStyle(document.body);
+  const px = (name) => parseFloat(cs.getPropertyValue(name)) || 0;
+  const availW =
+    window.innerWidth - 2 * px('--reserve-x') - px('--reserve-left') - px('--reserve-right');
+  const availH = window.innerHeight - px('--reserve-top') - px('--reserve-bottom');
+  // The largest 2:1 rectangle that fits the reserved band. Fit — never floor to
+  // a minimum — so a very short/narrow band yields a small map rather than one
+  // that overflows onto the surrounding chrome (search strip / time slider).
+  const fit = Math.max(1, Math.min(availW, availH * 2));
+  mapW = Math.floor(fit);
   mapH = Math.floor(mapW / 2);
 
   frameEl.style.width = `${mapW}px`;

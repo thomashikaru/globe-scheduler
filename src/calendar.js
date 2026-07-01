@@ -78,6 +78,10 @@ export function initCalendar() {
 
     dialog.hidden = false;
     btn.setAttribute('aria-expanded', 'true');
+    // Reserve space on the right (desktop) so the map slides over and stays
+    // fully visible while composing; the resize re-fits the flat map + globe.
+    document.body.classList.add('cal-open');
+    window.dispatchEvent(new Event('resize'));
     syncCities();
     titleInput.focus();
     titleInput.select();
@@ -88,6 +92,8 @@ export function initCalendar() {
     isOpen = false;
     dialog.hidden = true;
     btn.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('cal-open');
+    window.dispatchEvent(new Event('resize'));
     // Hand the reference time back to the slider.
     setOffset(savedOffset);
   }

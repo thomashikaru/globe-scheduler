@@ -10,8 +10,39 @@
   --night: #7aa2ff;
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   --radius: 12px;
+
+  /* Reserved insets around the flat map, so it is laid out inside the region
+     NOT covered by the fixed overlays. Read by both #flatmap (padding) and
+     sizeMap() in flatmap.js — keep the two in sync via these variables.
+     The left/right reserves are toggled by the has-pins / cal-open body
+     classes (desktop only); on mobile the panel becomes a top strip instead. */
+  --reserve-x: 24px; /* side gutter */
+  --reserve-top: 96px; /* search / toggle band */
+  --reserve-bottom: 150px; /* time slider band */
+  --reserve-left: 0px; /* Locations panel */
+  --reserve-right: 0px; /* calendar dialog when open */
+
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
+}
+
+/* Desktop (wide AND tall enough for a left column): the map slides right of the
+   left panel and left of the calendar, so nothing ever covers it. Short or
+   narrow viewports fall through to the compact block, which lays the chrome out
+   in top/bottom bands instead — the two ranges are mutually exclusive. */
+@media (min-width: 721px) and (min-height: 561px) {
+  /* Only one side is ever reserved, so the map is never sandwiched. While the
+     composer is open the Locations panel steps aside (the composer's own
+     "Local times" list covers it), and the map fills that whole side. */
+  body.has-pins:not(.cal-open) {
+    --reserve-left: 316px; /* 16 left margin + 300 panel width */
+  }
+  body.cal-open {
+    --reserve-right: 356px; /* 16 right margin + 340 dialog width */
+  }
+  body.cal-open #pin-panel {
+    display: none;
+  }
 }
 
 * {
@@ -131,7 +162,9 @@ body {
   left: 16px;
   z-index: 9;
   width: min(300px, calc(100vw - 32px));
-  max-height: calc(100vh - 220px);
+  /* Stop the bottom of a long list short of the time slider (~125px tall band
+     at the bottom) plus its own 108px top offset, so the two never collide. */
+  max-height: calc(100vh - 250px);
   overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -376,8 +409,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Reserve room for the search (top) and time slider (bottom) overlays. */
-  padding: 96px 24px 150px;
+  /* Reserve room for the surrounding overlays; the map centers in what's left.
+     Values mirror sizeMap() in flatmap.js via the shared --reserve-* vars. */
+  padding: var(--reserve-top) calc(var(--reserve-x) + var(--reserve-right))
+    var(--reserve-bottom) calc(var(--reserve-x) + var(--reserve-left));
   background: var(--bg);
 }
 #flatmap[hidden] {
@@ -444,7 +479,8 @@ body {
   right: 16px;
   z-index: 12;
   width: min(340px, calc(100vw - 32px));
-  max-height: calc(100vh - 96px);
+  /* Cap so the bottom of a tall composer clears the time slider band. */
+  max-height: calc(100vh - 210px);
   display: flex;
   flex-direction: column;
   background: var(--panel);
@@ -662,15 +698,117 @@ body {
   font-weight: 600;
 }
 
-/* On short/narrow viewports let the composer span the bottom instead of the
-   side, so it never collides with the location panel. */
-@media (max-width: 720px) {
-  #calendar-dialog {
-    top: auto;
-    bottom: 16px;
+/* ---------- Compact layout (narrow OR short) ----------
+   The chrome is all fixed over the map, so on small screens we keep it in
+   top/bottom bands (never a left column) and let the map fill the middle. The
+   Locations list turns into a horizontal chip strip below the search, and its
+   height is folded into --reserve-top so the map sits clear of it. Triggered by
+   narrow width OR short height — a short-but-wide window (e.g. a landscape
+   phone) has no room for a tall left column beside the bottom slider either. */
+@media (max-width: 720px), (max-height: 560px) {
+  :root {
+    --reserve-top: 100px; /* search band only */
+  }
+  body.has-pins {
+    --reserve-top: 150px; /* + room for the Locations chip strip */
+  }
+
+  /* Search fills the row but stops short of the view toggle, so it no longer
+     tucks underneath it. left (16px) + right drive the width. */
+  #topbar {
+    width: auto;
+    right: 112px;
+  }
+
+  /* Icon-only toggle: the emoji stays, the word is visually hidden (.vt-label). */
+  #view-toggle button {
+    padding: 7px 11px;
+    gap: 0;
+  }
+  .vt-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Locations → a single-row, sideways-scrolling strip of chips. */
+  #pin-panel {
+    top: 96px;
     left: 16px;
     right: 16px;
     width: auto;
-    max-height: 70vh;
+    max-height: 48px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  #pin-panel-head {
+    display: none;
+  }
+  #pin-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
+    width: max-content; /* keep children intrinsic so the row scrolls sideways */
+  }
+  .pin-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pin-row .info {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .pin-row .name {
+    max-width: 38vw;
+  }
+  .pin-row .clock {
+    font-size: 12px;
+  }
+  .pin-row .remove {
+    font-size: 14px;
+    padding: 0 2px;
+  }
+
+  /* Calendar composer: a sheet filling the map band (same reserved insets as the
+     map), leaving the search (top) and time slider (bottom) reachable — no
+     longer covering the slider or, via the reserves, the chip strip. */
+  #calendar-dialog {
+    top: var(--reserve-top);
+    bottom: var(--reserve-bottom);
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-height: none;
+  }
+
+  /* Keep the readout to one row (stable timebar height, so --reserve-bottom
+     always clears it): the action buttons hold their size and the time label
+     truncates instead of wrapping. */
+  #time-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #time-actions {
+    flex: none;
+  }
+  #calendar-btn {
+    padding: 5px 10px;
   }
 }
