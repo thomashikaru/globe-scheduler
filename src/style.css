@@ -1,0 +1,676 @@
+:root {
+  --bg: #05070d;
+  --panel: rgba(16, 22, 34, 0.82);
+  --panel-solid: #121826;
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #eef2f8;
+  --text-dim: #93a0b4;
+  --accent: #4ea1ff;
+  --day: #ffd66b;
+  --night: #7aa2ff;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --radius: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#globe {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ---------- Top bar: brand + search ---------- */
+#topbar {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(340px, calc(100vw - 32px));
+}
+
+#brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+#brand-mark {
+  font-size: 18px;
+}
+
+#search {
+  position: relative;
+}
+
+#city-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s ease;
+}
+#city-input::placeholder {
+  color: var(--text-dim);
+}
+#city-input:focus {
+  border-color: var(--accent);
+}
+
+#suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  max-height: 320px;
+  overflow-y: auto;
+}
+#suggestions[hidden] {
+  display: none;
+}
+.suggestion {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.suggestion .city {
+  font-weight: 500;
+}
+.suggestion .meta {
+  color: var(--text-dim);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.suggestion.active,
+.suggestion:hover {
+  background: rgba(78, 161, 255, 0.18);
+}
+
+/* ---------- Left panel: added locations ---------- */
+#pin-panel {
+  position: fixed;
+  top: 108px;
+  left: 16px;
+  z-index: 9;
+  width: min(300px, calc(100vw - 32px));
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+#pin-panel[hidden] {
+  display: none;
+}
+#pin-panel-head {
+  padding: 10px 14px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+#pin-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+}
+.pin-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+}
+.pin-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.pin-row .badge {
+  font-size: 16px;
+  line-height: 1;
+}
+.pin-row .info {
+  min-width: 0;
+}
+.pin-row .name {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pin-row .clock {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.pin-row .remove {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.pin-row .remove:hover {
+  color: #ff7676;
+  background: rgba(255, 118, 118, 0.12);
+}
+
+/* ---------- Bottom bar: time slider ---------- */
+#timebar {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: min(680px, calc(100vw - 32px));
+  padding: 14px 18px 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+#time-readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+#time-label {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+#time-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#reset-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(78, 161, 255, 0.14);
+  border: 1px solid rgba(78, 161, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+}
+#reset-btn:hover {
+  background: rgba(78, 161, 255, 0.24);
+}
+#reset-btn.hidden {
+  visibility: hidden;
+}
+#calendar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(78, 161, 255, 0.9);
+  border: 1px solid rgba(78, 161, 255, 0.95);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#calendar-btn:hover {
+  background: var(--accent);
+}
+#calendar-btn[aria-expanded='true'] {
+  background: rgba(78, 161, 255, 0.25);
+  color: #fff;
+}
+
+#time-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(122, 162, 255, 0.5),
+    rgba(255, 214, 107, 0.6),
+    rgba(122, 162, 255, 0.5)
+  );
+  outline: none;
+  cursor: pointer;
+}
+#time-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+}
+#time-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  cursor: grab;
+}
+#slider-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Globe pin markers (HTML elements layer) ----------
+   globe.gl centers each element on its lat/lng, so the element is a 0x0 origin
+   and the pin parts are positioned relative to that geographic point. */
+.globe-pin {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.globe-pin .dot {
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(78, 161, 255, 0.35);
+}
+.globe-pin .needle {
+  position: absolute;
+  left: -1px;
+  top: -16px;
+  width: 2px;
+  height: 16px;
+  background: var(--accent);
+}
+.globe-pin .card {
+  position: absolute;
+  left: 0;
+  top: -16px;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+  font-size: 13px;
+}
+.globe-pin .card .badge {
+  font-size: 14px;
+}
+.globe-pin .card .name {
+  font-weight: 600;
+}
+.globe-pin .card .clock {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Flat "Map" view ---------- */
+#flatmap {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Reserve room for the search (top) and time slider (bottom) overlays. */
+  padding: 96px 24px 150px;
+  background: var(--bg);
+}
+#flatmap[hidden] {
+  display: none;
+}
+.map-frame {
+  position: relative;
+}
+#flatmap-canvas {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+#flatmap-pins {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ---------- Globe / Map segmented toggle ---------- */
+#view-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 11;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+#view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+#view-toggle button:hover {
+  color: var(--text);
+}
+#view-toggle button.active {
+  color: #fff;
+  background: rgba(78, 161, 255, 0.9);
+}
+
+/* ---------- Calendar event composer (right-docked) ----------
+   Docked to the edge on purpose: the globe/map and the left location panel
+   stay visible so the chosen time can be confirmed across cities while editing. */
+#calendar-dialog {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  z-index: 12;
+  width: min(340px, calc(100vw - 32px));
+  max-height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+#calendar-dialog[hidden] {
+  display: none;
+}
+#cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+#cal-heading {
+  font-size: 14px;
+  font-weight: 600;
+}
+#cal-close {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+#cal-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+#cal-body {
+  padding: 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.cal-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-dim);
+}
+.cal-hint {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.cal-field input,
+.cal-field select {
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 14px;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+}
+.cal-field input:focus,
+.cal-field select:focus {
+  border-color: var(--accent);
+}
+.cal-field input[aria-invalid='true'] {
+  border-color: #ff7676;
+}
+/* Nudge the native date/time pickers and the select popup to a dark scheme. */
+.cal-field input[type='date'],
+.cal-field input[type='time'],
+.cal-field select {
+  color-scheme: dark;
+}
+/* Replace the native select chrome with a custom chevron to match the inputs. */
+.cal-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%2393a0b4' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.cal-field select:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.cal-field select option {
+  background: var(--panel-solid);
+  color: var(--text);
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cal-grid .cal-field:last-child {
+  grid-column: 1 / -1;
+}
+
+.cal-subhead {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+#cal-cities[hidden] {
+  display: none;
+}
+#cal-city-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#cal-city-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+.cal-city-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-city-clock {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#cal-confirm {
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(78, 161, 255, 0.9);
+  border: 1px solid rgba(78, 161, 255, 0.95);
+  border-radius: 9px;
+  cursor: pointer;
+}
+#cal-confirm:hover {
+  background: var(--accent);
+}
+
+#cal-result[hidden] {
+  display: none;
+}
+.cal-link-row {
+  display: flex;
+  gap: 8px;
+}
+#cal-link {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+}
+#cal-copy {
+  flex: none;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(78, 161, 255, 0.14);
+  border: 1px solid rgba(78, 161, 255, 0.35);
+  border-radius: 8px;
+  cursor: pointer;
+}
+#cal-copy:hover {
+  background: rgba(78, 161, 255, 0.24);
+}
+#cal-copy.copied {
+  color: #7ee0a2;
+  border-color: rgba(126, 224, 162, 0.5);
+  background: rgba(126, 224, 162, 0.14);
+}
+#cal-open {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+#cal-open:hover {
+  text-decoration: underline;
+}
+.cal-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.cal-note strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* On short/narrow viewports let the composer span the bottom instead of the
+   side, so it never collides with the location panel. */
+@media (max-width: 720px) {
+  #calendar-dialog {
+    top: auto;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-height: 70vh;
+  }
+}

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Globe Scheduler — find a good time to call</title>
+  </head>
+  <body>
+    <!-- Two interchangeable earth views; only one is shown at a time -->
+    <div id="globe"></div>
+    <div id="flatmap" hidden>
+      <div class="map-frame">
+        <canvas id="flatmap-canvas"></canvas>
+        <div id="flatmap-pins"></div>
+      </div>
+    </div>
+
+    <!-- Top-right: switch between globe and flat map -->
+    <div id="view-toggle" role="group" aria-label="Earth view">
+      <button id="view-globe" type="button" aria-pressed="false">
+        <span aria-hidden="true">🌐</span> Globe
+      </button>
+      <button id="view-map" type="button" class="active" aria-pressed="true">
+        <span aria-hidden="true">🗺️</span> Map
+      </button>
+    </div>
+
+    <!-- Top-left: title + city search -->
+    <header id="topbar">
+      <div id="brand">
+        <span id="brand-mark">🌍</span>
+        <span id="brand-name">Globe Scheduler</span>
+      </div>
+      <div id="search">
+        <input
+          id="city-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Add a city…  (e.g. Tokyo)"
+          aria-label="Search for a city to add"
+        />
+        <ul id="suggestions" role="listbox" hidden></ul>
+      </div>
+    </header>
+
+    <!-- Left: list of added locations -->
+    <aside id="pin-panel" hidden>
+      <div id="pin-panel-head">Locations</div>
+      <ul id="pin-list"></ul>
+    </aside>
+
+    <!-- Bottom: time slider -->
+    <footer id="timebar">
+      <div id="time-readout">
+        <span id="time-label">Now</span>
+        <div id="time-actions">
+          <button id="reset-btn" type="button" title="Jump back to the current time">Now</button>
+          <button
+            id="calendar-btn"
+            type="button"
+            aria-expanded="false"
+            aria-controls="calendar-dialog"
+          >
+            <span aria-hidden="true">📅</span> Add to Calendar
+          </button>
+        </div>
+      </div>
+      <input
+        id="time-slider"
+        type="range"
+        min="0"
+        max="1440"
+        step="15"
+        value="0"
+        aria-label="Shift the reference time forward from now"
+      />
+      <div id="slider-scale">
+        <span>Now</span><span>+6h</span><span>+12h</span><span>+18h</span><span>+24h</span>
+      </div>
+    </footer>
+
+    <!-- Right side: compose a Google Calendar event for the chosen instant.
+         Docked to the edge so the globe/map stays visible for confirmation. -->
+    <section
+      id="calendar-dialog"
+      role="dialog"
+      aria-labelledby="cal-heading"
+      hidden
+    >
+      <header id="cal-head">
+        <span id="cal-heading">Add to Calendar</span>
+        <button id="cal-close" type="button" aria-label="Close">✕</button>
+      </header>
+
+      <div id="cal-body">
+        <label class="cal-field">
+          <span class="cal-label">Event title</span>
+          <input id="cal-title" type="text" placeholder="Meeting" />
+        </label>
+
+        <div class="cal-grid">
+          <label class="cal-field">
+            <span class="cal-label">Date</span>
+            <input id="cal-date" type="date" />
+          </label>
+          <label class="cal-field">
+            <span class="cal-label">Time</span>
+            <select id="cal-time"></select>
+          </label>
+          <label class="cal-field">
+            <span class="cal-label">Duration</span>
+            <select id="cal-duration">
+              <option value="30">30 min</option>
+              <option value="60" selected>1 hour</option>
+              <option value="90">1.5 hours</option>
+              <option value="120">2 hours</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="cal-field">
+          <span class="cal-label">
+            Location or link <span class="cal-hint">(optional)</span>
+          </span>
+          <input
+            id="cal-location"
+            type="text"
+            placeholder="Zoom / WhatsApp link or address…"
+          />
+        </label>
+
+        <div id="cal-cities" hidden>
+          <div class="cal-subhead">Local times</div>
+          <ul id="cal-city-list"></ul>
+        </div>
+
+        <button id="cal-confirm" type="button">Confirm &amp; create link</button>
+
+        <div id="cal-result" hidden>
+          <div class="cal-subhead">Add to your calendar</div>
+          <div class="cal-link-row">
+            <input id="cal-link" type="text" readonly aria-label="Google Calendar link" />
+            <button id="cal-copy" type="button">Copy</button>
+          </div>
+          <a id="cal-open" href="#" target="_blank" rel="noopener noreferrer">
+            Open in Google Calendar ↗
+          </a>
+          <p class="cal-note">
+            This opens a pre-filled event on <strong>your</strong> calendar. To invite
+            people, open it, save, then add guests in Google Calendar — don't just forward
+            this link, or everyone gets a separate copy with no shared RSVPs.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

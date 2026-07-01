@@ -1,0 +1,29 @@
+{
+  "name": "globe-scheduler",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A timezone-aware meeting scheduler with a Google-Earth-style day/night globe.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "data:cities": "node scripts/build-cities.mjs",
+    "data:tz": "node scripts/build-timezones.mjs"
+  },
+  "dependencies": {
+    "globe.gl": "^2.34.0",
+    "solar-calculator": "^0.3.0",
+    "suncalc": "^1.9.0",
+    "three": "0.185.0"
+  },
+  "devDependencies": {
+    "all-the-cities": "^3.1.0",
+    "tz-lookup": "^6.1.25",
+    "vite": "^5.4.0"
+  },
+  "comment": "globe.gl 2.46 needs three>=0.179; pin a single three across the whole tree so our ShaderMaterial and globe.gl's renderer share one instance.",
+  "overrides": {
+    "three": "0.185.0"
+  }
+}
