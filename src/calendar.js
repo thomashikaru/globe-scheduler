@@ -12,7 +12,7 @@ import {
   subscribe,
   getState,
   effectiveDate,
-  setOffset,
+  resetToNow,
   setEffectiveDate
 } from './state.js';
 import { isDaylight } from './solar.js';
@@ -58,7 +58,7 @@ export function initCalendar() {
   populateTimeOptions(timeInput);
 
   let isOpen = false;
-  let savedOffset = 0; // slider position to restore when the composer closes
+  let savedRef = null; // reference instant to restore when the composer closes
   let desired = null; // absolute instant (ms) currently chosen in the inputs
 
   // ----- open / close -------------------------------------------------------
@@ -66,7 +66,7 @@ export function initCalendar() {
   function open() {
     if (isOpen) return;
     isOpen = true;
-    savedOffset = getState().offsetMinutes;
+    savedRef = getState().refInstant;
 
     // Seed the editable fields from the instant currently on screen.
     const now = effectiveDate();
@@ -94,8 +94,9 @@ export function initCalendar() {
     btn.setAttribute('aria-expanded', 'false');
     document.body.classList.remove('cal-open');
     window.dispatchEvent(new Event('resize'));
-    // Hand the reference time back to the slider.
-    setOffset(savedOffset);
+    // Hand the reference time back to the slider — live if it was live before.
+    if (savedRef === null) resetToNow();
+    else setEffectiveDate(new Date(savedRef));
   }
 
   btn.addEventListener('click', () => (isOpen ? close() : open()));
@@ -249,7 +250,7 @@ function buildDetails(pins, instant) {
     if (extra > 0) lines.push(`…and ${extra} more`);
     lines.push('');
   }
-  lines.push('Created with Globe Scheduler');
+  lines.push('Created with Globe Scheduler — https://thomashikaru.github.io/globe-scheduler');
   return lines.join('\n');
 }
 

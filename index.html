@@ -4,8 +4,82 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Globe Scheduler — find a good time to call</title>
+    <style>
+      /* Critical, inlined so the loading overlay paints and blocks interaction
+         before the main stylesheet and JS finish downloading. It covers the
+         viewport opaquely; main.js fades it out (and removes it) once the map
+         imagery is loaded and painted. Matches the app's dark palette. */
+      #loading {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #05070d;
+        color: #93a0b4;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Helvetica, Arial, sans-serif;
+        transition: opacity 0.45s ease;
+      }
+      #loading.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #loading .l-spinner {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.14);
+        border-top-color: #4ea1ff;
+        animation: loading-spin 0.9s linear infinite;
+      }
+      #loading .l-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #eef2f8;
+      }
+      #loading .l-track {
+        width: 180px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+      }
+      #loading .l-bar {
+        height: 100%;
+        width: 100%;
+        border-radius: 999px;
+        background: #4ea1ff;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+      }
+      @keyframes loading-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #loading .l-spinner {
+          animation-duration: 2s;
+        }
+      }
+    </style>
   </head>
-  <body>
+  <body class="app-loading">
+    <!-- Full-screen loader shown until the map + globe are ready (see main.js).
+         Present in the initial HTML so it blocks clicks from the first paint.
+         The body keeps `app-loading` until the overlay is gone, which lifts the
+         view toggle above the overlay so Globe/Map stays clickable during load. -->
+    <div id="loading" role="status" aria-live="polite" aria-label="Loading Globe Scheduler">
+      <div class="l-spinner" aria-hidden="true"></div>
+      <div class="l-title">Loading Globe Scheduler…</div>
+      <div class="l-track"><div class="l-bar" id="loading-bar"></div></div>
+    </div>
+
     <!-- Two interchangeable earth views; only one is shown at a time -->
     <div id="globe"></div>
     <div id="flatmap" hidden>
@@ -66,17 +140,38 @@
           </button>
         </div>
       </div>
+      <!-- Pick the day; the slider below scrubs the time within that day -->
+      <div id="day-pills" role="group" aria-label="Choose the day">
+        <button id="pill-today" class="day-pill" type="button" aria-pressed="true">
+          Today
+        </button>
+        <button id="pill-tomorrow" class="day-pill" type="button" aria-pressed="false">
+          Tomorrow
+        </button>
+        <!-- "Choose date" overlays a native date input, so a tap opens the
+             browser's calendar picker directly (past dates disabled via min). -->
+        <span id="pill-date-wrap">
+          <button id="pill-date" class="day-pill" type="button" aria-pressed="false">
+            Choose date…
+          </button>
+          <input id="pill-date-input" type="date" aria-label="Choose a specific date" />
+        </span>
+      </div>
+
+      <!-- 24h of the selected day in 15-min steps; the last slot is 23:45 so the
+           right edge can't roll over into the next day. The greyed "past" region
+           (today only) is painted straight onto the track via --past-pct. -->
       <input
         id="time-slider"
         type="range"
         min="0"
-        max="1440"
+        max="1425"
         step="15"
         value="0"
-        aria-label="Shift the reference time forward from now"
+        aria-label="Time of day"
       />
       <div id="slider-scale">
-        <span>Now</span><span>+6h</span><span>+12h</span><span>+18h</span><span>+24h</span>
+        <span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>12am</span>
       </div>
     </footer>
 
@@ -147,9 +242,7 @@
             Open in Google Calendar ↗
           </a>
           <p class="cal-note">
-            This opens a pre-filled event on <strong>your</strong> calendar. To invite
-            people, open it, save, then add guests in Google Calendar — don't just forward
-            this link, or everyone gets a separate copy with no shared RSVPs.
+            This opens a pre-filled event on the logged-in user's Google Calendar. Click the link to invite guests, save the event, or make it repeat.
           </p>
         </div>
       </div>

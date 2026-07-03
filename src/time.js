@@ -42,13 +42,20 @@ export function formatUtcOffset(date, tz) {
   }
 }
 
-/** A friendly readout of the reference instant, e.g. "Now" or "+3h 15m from now". */
-export function formatOffsetLabel(offsetMinutes) {
-  if (offsetMinutes === 0) return 'Now';
-  const sign = offsetMinutes > 0 ? '+' : '−';
-  const abs = Math.abs(offsetMinutes);
-  const h = Math.floor(abs / 60);
-  const m = abs % 60;
-  const hm = [h ? `${h}h` : '', m ? `${m}m` : ''].filter(Boolean).join(' ');
-  return `${sign}${hm} from now`;
+/** Wall-clock time of `date` in the browser's zone, 24-hour, e.g. "15:30". */
+export function formatClock(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(date);
+}
+
+/** Short calendar date in the browser's zone, e.g. "Thu, Jul 10". */
+export function formatShortDate(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  }).format(date);
 }

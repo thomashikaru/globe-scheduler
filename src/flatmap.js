@@ -33,14 +33,16 @@ let mapH = 0; // display size (CSS px)
 let pinList = []; // [{ p, el, badge, clock }]
 let lastPinIds = '';
 
-export function initFlatmap() {
+export function initFlatmap(onProgress) {
   frameEl = document.querySelector('#flatmap .map-frame');
   canvas = document.getElementById('flatmap-canvas');
   ctx = canvas.getContext('2d');
   pinsEl = document.getElementById('flatmap-pins');
 
   sizeMap();
-  loadAssets();
+  // Resolves once the imagery is decoded and the first frame is painted; the
+  // caller (main.js) uses it to dismiss the loading overlay. Never rejects.
+  const assetsReady = loadAssets(onProgress);
   window.addEventListener('resize', () => {
     sizeMap();
     render();
@@ -62,6 +64,8 @@ export function initFlatmap() {
     const date = effectiveDate();
     for (const e of pinList) updatePin(e, date);
   });
+
+  return assetsReady;
 }
 
 /** Force a redraw (used when the view becomes visible). */
@@ -73,23 +77,39 @@ export function redrawFlatmap() {
 
 // ---------- asset loading + layer pre-rendering ----------
 
-async function loadAssets() {
+// Load the three map assets (day + night imagery, time-zone geometry), reporting
+// fractional progress as each settles, then bake the layers and paint. Every path
+// resolves — a failed image or fetch falls back rather than hanging — so the
+// caller's readiness promise is guaranteed to settle and the loader can't stick.
+async function loadAssets(onProgress) {
+  // Fire once per asset settled (day + night imagery, time-zone geometry) so the
+  // caller can drive a combined progress bar across the map AND globe.
+  const tick = () => onProgress?.();
+
+  // Resolve on error too (with null); makeLayer paints a fallback fill for a
+  // missing image instead of throwing.
   const loadImg = (src) =>
     new Promise((res) => {
       const img = new Image();
-      img.onload = () => res(img);
+      img.onload = () => (tick(), res(img));
+      img.onerror = () => (tick(), res(null));
       img.src = src;
     });
-  const [dayImg, nightImg] = await Promise.all([loadImg(DAY_SRC), loadImg(NIGHT_SRC)]);
 
-  try {
-    const geo = await (await fetch(TZ_GEOJSON)).json();
-    tzFeatures = (geo.features || []).filter(
-      (f) => f.geometry && f.geometry.type && f.geometry.coordinates
-    );
-  } catch {
-    tzFeatures = [];
-  }
+  const geoReady = (async () => {
+    try {
+      const geo = await (await fetch(TZ_GEOJSON)).json();
+      tzFeatures = (geo.features || []).filter(
+        (f) => f.geometry && f.geometry.type && f.geometry.coordinates
+      );
+    } catch {
+      tzFeatures = [];
+    }
+    tick();
+  })();
+
+  const [dayImg, nightImg] = await Promise.all([loadImg(DAY_SRC), loadImg(NIGHT_SRC)]);
+  await geoReady;
 
   dayLayer = makeLayer(dayImg);
   nightLayer = makeLayer(nightImg);
@@ -102,7 +122,14 @@ function makeLayer(img) {
   c.width = LAYER_W;
   c.height = LAYER_H;
   const g = c.getContext('2d');
-  g.drawImage(img, 0, 0, LAYER_W, LAYER_H);
+  if (img && img.naturalWidth) {
+    g.drawImage(img, 0, 0, LAYER_W, LAYER_H);
+  } else {
+    // Imagery failed to load — fill a neutral ocean-blue so the map still shows
+    // its terminator + time-zone lines instead of a blank/broken canvas.
+    g.fillStyle = '#0b1a2b';
+    g.fillRect(0, 0, LAYER_W, LAYER_H);
+  }
   drawTimezoneLines(g, LAYER_W, LAYER_H);
   return c;
 }

@@ -18,7 +18,7 @@
      classes (desktop only); on mobile the panel becomes a top strip instead. */
   --reserve-x: 24px; /* side gutter */
   --reserve-top: 96px; /* search / toggle band */
-  --reserve-bottom: 150px; /* time slider band */
+  --reserve-bottom: 192px; /* day pills + time slider band */
   --reserve-left: 0px; /* Locations panel */
   --reserve-right: 0px; /* calendar dialog when open */
 
@@ -308,12 +308,24 @@ body {
   width: 100%;
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(122, 162, 255, 0.5),
-    rgba(255, 214, 107, 0.6),
-    rgba(122, 162, 255, 0.5)
-  );
+  /* Past-of-now edge (today only); set from slider.js as a calc that already
+     accounts for the thumb radius, so the grey edge sits exactly under the
+     thumb. Painted onto the track itself, so it also lines up vertically. On
+     days with no past it is 0px, leaving the whole track coloured. */
+  --past-edge: 0px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(18, 24, 38, 0.86) 0,
+      rgba(18, 24, 38, 0.86) var(--past-edge),
+      rgba(0, 0, 0, 0) var(--past-edge)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(122, 162, 255, 0.5),
+      rgba(255, 214, 107, 0.6),
+      rgba(122, 162, 255, 0.5)
+    );
   outline: none;
   cursor: pointer;
 }
@@ -343,6 +355,59 @@ body {
   font-size: 11px;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Day pills (Today / Tomorrow / Choose date…) ---------- */
+#day-pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.day-pill {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.day-pill:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+}
+.day-pill.active {
+  color: #fff;
+  background: rgba(78, 161, 255, 0.9);
+  border-color: rgba(78, 161, 255, 0.95);
+}
+/* The native date picker backing "Choose date…": off-screen but in layout, so
+   showPicker() has an element to anchor to. The pill is the visible control. */
+#pill-date-wrap {
+  position: relative;
+  display: inline-flex;
+}
+#pill-date-input {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* While the composer is open it owns the reference time; freeze the pills and
+   slider so the two controls can't fight over the instant. */
+body.cal-open #day-pills,
+body.cal-open #time-slider {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 /* ---------- Globe pin markers (HTML elements layer) ----------
@@ -448,6 +513,13 @@ body {
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
 }
+/* While the initial loading overlay (z 9999) is up, lift the Globe/Map toggle
+   above it so the view choice is clickable during load — picking a view selects
+   which one is revealed when loading finishes, instead of the overlay swallowing
+   the click. Scoped to the loading phase so it never covers the calendar panel. */
+body.app-loading #view-toggle {
+  z-index: 10000;
+}
 #view-toggle button {
   display: inline-flex;
   align-items: center;
@@ -468,6 +540,29 @@ body {
 #view-toggle button.active {
   color: #fff;
   background: rgba(78, 161, 255, 0.9);
+}
+/* Cold first switch to Globe: the chunk is still loading. Spin a small ring
+   after the label (the button lays out as inline-flex with a gap) so the click
+   reads as "working" rather than dead. Cleared in view.js once mounted. */
+#view-globe.loading {
+  cursor: progress;
+}
+#view-globe.loading .vt-label {
+  opacity: 0.75;
+}
+#view-globe.loading::after {
+  content: '';
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--accent);
+  animation: vt-spin 0.7s linear infinite;
+}
+@keyframes vt-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ---------- Calendar event composer (right-docked) ----------
@@ -809,6 +904,14 @@ body {
     flex: none;
   }
   #calendar-btn {
+    padding: 5px 10px;
+  }
+  /* Let the day pills wrap rather than overflow on a narrow timebar. */
+  #day-pills {
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .day-pill {
     padding: 5px 10px;
   }
 }
